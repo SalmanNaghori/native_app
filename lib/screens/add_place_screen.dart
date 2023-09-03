@@ -1,8 +1,9 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:native_app/providers/great_places.dart';
 import 'package:provider/provider.dart';
 import '../widgets/image_input/image_input.dart';
@@ -15,27 +16,25 @@ class AddPlaceScreen extends StatefulWidget {
 }
 
 class _AddPlaceScreenState extends State<AddPlaceScreen> {
-  final _titleController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
   File? _pickedImage;
+
+  String imagePath = "";
 
   void _selectImage(File pickedImage) {
     _pickedImage = pickedImage;
-  }
-
-  void _savePlace() {
-    if (_titleController.text.isEmpty || _pickedImage == null) {
-      return;
-    }
-    Provider.of<GreatPlace>(context, listen: false)
-        .addPlace(_titleController.text, _pickedImage!);
-    Navigator.of(context).pop();
+    imagePath = _pickedImage!.path;
+    log(imagePath);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add A New Place'),
+        title: const Text('Add A New Place'),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        systemOverlayStyle:
+            const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -57,27 +56,47 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
                       ),
                       controller: _titleController,
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 10,
                     ),
-                    ImageInput(_selectImage),
+                    ImageInput(_selectImage)
                   ],
                 ),
               ),
             ),
           ),
           ElevatedButton.icon(
-            onPressed: _savePlace,
-            icon: Icon(Icons.add),
-            label: Text('Add Place'),
+            onPressed: () {
+              validation();
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Add Place'),
             style: ElevatedButton.styleFrom(
               elevation: 0,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              primary: Theme.of(context).accentColor,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
             ),
           ),
         ],
       ),
     );
+  }
+
+  validation() {
+    if (_titleController.text.isEmpty) {
+      Fluttertoast.showToast(
+          msg: "Please select a title", timeInSecForIosWeb: 1, fontSize: 16.0);
+    } else if (imagePath.isEmpty) {
+      Fluttertoast.showToast(
+          msg: "Please select an image", timeInSecForIosWeb: 1, fontSize: 16.0);
+    } else {
+      Provider.of<GreatPlace>(context, listen: false)
+          .addItem(_titleController.text, _pickedImage!);
+      Fluttertoast.showToast(
+          msg: "Place added successfully",
+          timeInSecForIosWeb: 1,
+          fontSize: 16.0);
+      Navigator.of(context).pop();
+    }
   }
 }
