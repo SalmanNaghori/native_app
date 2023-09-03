@@ -1,16 +1,14 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart' as syspaths;
+import 'package:path_provider/path_provider.dart' as syspath;
 
 class ImageInput extends StatefulWidget {
-  final Function onSelectImage;
-  const ImageInput(
-    this.onSelectImage,
-  );
+  final Function selectImage;
+  ImageInput(this.selectImage);
 
   @override
   State<ImageInput> createState() => _ImageInputState();
@@ -18,23 +16,64 @@ class ImageInput extends StatefulWidget {
 
 class _ImageInputState extends State<ImageInput> {
   File? _storeImage;
+  Logger log = Logger();
 
-  Future _takePicture() async {
+  Future<void> _takePicFromCamera() async {
     final imageFile = await ImagePicker().pickImage(
       source: ImageSource.camera,
+      maxWidth: 600,
       maxHeight: 600,
     );
-    if (imageFile == null) {
-      return;
-    }
     setState(() {
       _storeImage = File(imageFile!.path);
     });
-    final appDir = await syspaths.getApplicationDocumentsDirectory();
+    final appDrive = await syspath.getApplicationDocumentsDirectory();
     final fileName = path.basename(imageFile!.path);
+    log.e(fileName);
+    final savedImage = await _storeImage!.copy('${appDrive.path}/$fileName');
+    widget.selectImage(savedImage);
+  }
 
-    final savedImge = await _storeImage!.copy('${appDir.path}/$fileName');
-    widget.onSelectImage(savedImge);
+  Future<void> _takePicFromGallery() async {
+    final imageFile = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, maxWidth: 600, maxHeight: 600);
+
+    setState(() {
+      _storeImage = File(imageFile!.path);
+    });
+    final appDrive = await syspath.getApplicationDocumentsDirectory();
+    final fileName = path.basename(imageFile!.path);
+    log.e(fileName);
+    final savedImage = await _storeImage!.copy('${appDrive.path}/$fileName');
+    widget.selectImage(savedImage);
+  }
+
+  void _takePic() {
+    showModalBottomSheet(
+        context: context,
+        builder: (ctx) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () {
+                  _takePicFromCamera();
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: const Text('Gallery'),
+                onTap: () {
+                  _takePicFromGallery();
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          );
+        });
   }
 
   @override
@@ -59,18 +98,20 @@ class _ImageInputState extends State<ImageInput> {
                 ),
           alignment: Alignment.center,
         ),
-        SizedBox(
+        const SizedBox(
           width: 10,
         ),
         Expanded(
           child: TextButton.icon(
-            onPressed: _takePicture,
-            icon: Icon(Icons.camera_alt),
-            label: Text(
+            onPressed: () {
+              _takePic();
+            },
+            icon: const Icon(Icons.camera_alt),
+            label: const Text(
               'Take Picture',
             ),
-            style:
-                TextButton.styleFrom(primary: Theme.of(context).primaryColor),
+            style: TextButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondary),
           ),
         )
       ],

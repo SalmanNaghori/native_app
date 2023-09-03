@@ -1,11 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:native_app/providers/great_places.dart';
 import 'package:provider/provider.dart';
 import '../screens/add_place_screen.dart';
 
 class PlacesListScreen extends StatelessWidget {
+  const PlacesListScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -13,7 +13,7 @@ class PlacesListScreen extends StatelessWidget {
         title: Text('Your Places'),
         actions: [
           IconButton(
-            icon: Icon(
+            icon: const Icon(
               Icons.add,
             ),
             onPressed: () {
@@ -22,33 +22,24 @@ class PlacesListScreen extends StatelessWidget {
           )
         ],
       ),
-      body: FutureBuilder(
-        future:
-            Provider.of<GreatPlace>(context, listen: false).fetchAndSetPlaces(),
-        builder: (ctx, snapshot) =>
-            snapshot.connectionState == ConnectionState.waiting
-                ? Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : Consumer<GreatPlace>(
-                    child: const Center(
-                      child: Text('Got no places yet, start adding some!'),
+      body: Consumer<GreatPlace>(
+        child: const Center(
+          child: Text('Got no places yet, start adding some!'),
+        ),
+        builder: (ctx, greatPlaces, child) => greatPlaces.items.isEmpty
+            ? child!
+            : ListView.builder(
+                itemBuilder: (ctx, index) => ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: FileImage(
+                      greatPlaces.items[index].image,
                     ),
-                    builder: (ctx, greatPlaces, ch) => greatPlaces.items.isEmpty
-                        ? ch!
-                        : ListView.builder(
-                            itemBuilder: (ctx, index) => ListTile(
-                              leading: CircleAvatar(
-                                backgroundImage: FileImage(
-                                  greatPlaces.items[index].image,
-                                ),
-                              ),
-                              title: Text(greatPlaces.items[index].title),
-                              onTap: () {},
-                            ),
-                            itemCount: greatPlaces.items.length,
-                          ),
                   ),
+                  title: Text(greatPlaces.items[index].title),
+                  onTap: () {},
+                ),
+                itemCount: greatPlaces.items.length,
+              ),
       ),
     );
   }
